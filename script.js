@@ -1,86 +1,81 @@
-function createPlayer(name, mark) {
-    return {name, mark};
-}
+const p1Mark = "x";
+const gameMode = "manual";
 
-const player1 = createPlayer("chiku", "x");
-const player2 = createPlayer("miku", "o");
+const game = (function(p1Mark, gameMode) {
+    function _createPlayer(mark) {
+        return {mark};
+    }
 
-// console.log(player1);
-// console.log(player2);
+    const player1 = _createPlayer(p1Mark);
+    const player2 = _createPlayer(p1Mark === "x" ? "o" : "x");
 
-function createGameBoard() {
-    const board = [["_", "_", "_"], ["_", "_", "_"], ["_", "_", "_"]];
-    return board;
-}
+    const _board = [];
+    let _currentPlayer = structuredClone(player1);
 
-const board = createGameBoard();
-
-console.log(board);
-
-function updateGameBoard(mark, position) {
-    board[position[0]][position[1]] = mark;
-    // return board;
-}
-
-updateGameBoard("x", [0, 1]);
-console.log(board);
-
-function checkGameOverStatus() {
-    board.forEach(row => {
-        if (!row.includes("_")) return true;
-    });
-
-    const row0 = []; const row1 = []; const row2 = [];
-    const col0 = []; const col1 = []; const col2 = [];
-    const primaryDiag = []; const secondaryDiag = [];
-
-    for (let i = 0; i < 3; i ++) {
-        for (let j = 0; j < 3; j ++) {
-            if (i === j) {
-                primaryDiag.push(board[i][j]);
-            }
-            if (i + j === 2) {
-                secondaryDiag.push(board[i][j]);
-            }
-            if (i === 0) {
-                row0.push(board[i][j]);
-            } else if (i == 1) {
-                row1.push(board[i][j]);
-            } else if (i == 2) {
-                row2.push(board[i][j]);
-            }
-            if (j === 0) {
-                col0.push(board[i][j]);
-            } else if (j === 1) {
-                col1.push(board[i][j]);
-            } else if (j === 2) {
-                col2.push(board[i][j]);
-            }
+    function initializeBoard() {
+        for (let i = 0; i < 3; i ++) {
+            _board.push(["_", "_", "_"]);
         }
     }
 
-    for (let row of [row0, row1, row2, col0, col1, col2, primaryDiag, secondaryDiag]) {
-        if (row.includes("_")) {
-            continue;
-        }
-        if (!row.includes("o")) {
-            return [true, "x"];
-        }
-        if (!row.includes("x" )) {
-            return [true, "o"];
+    function updateGameState(position) {
+        _board[position[0]][position[1]] = _currentPlayer.mark;
+        // console.log(structuredClone(_board));
+
+        if (_currentPlayer.mark === player1.mark) {
+            _currentPlayer = structuredClone(player2);
+        } else {
+            _currentPlayer = structuredClone(player1);
         }
     }
 
-    return [false, "_"];
+    function _getBoardState() {
+        const rows = [[], [], []];
+        const columns = [[], [], []];
+        const diagonals = [[], []];
+
+        for (let i = 0; i < 3; i ++) {
+            for (let j = 0; j < 3; j ++) {
+                rows[i].push(_board[i][j]);
+                columns[j].push(_board[i][j]);
+                if (i === j) diagonals[0].push(_board[i][j]); // primary diagonal
+                if (i + j === 2) diagonals[1].push(_board[i][j]); // secondary diagonal
+            }
+        }
+
+        return [rows, columns, diagonals];
+    }
+
+    function getRunningState() {
+        const boardState = _getBoardState();
+
+        for (let dimension of boardState) { // [rows, columns, diagonals]
+            for (let entry of dimension) {
+                if (entry.includes("_")) continue;
+                if (!entry.includes(player1.mark)) return [false, player2];
+                if (!entry.includes(player2.mark)) return [false, player1];
+            }
+        }
+
+        return [true, null]; // game is not over i.e. running
+    }
+
+    return {initializeBoard, updateGameState, getRunningState};
+}) (p1Mark, gameMode);
+
+
+game.initializeBoard();
+const array = [[0, 0], [1, 1], [0, 1], [0, 2], [2, 2], [2, 0]];
+let i = 0;
+while (game.getRunningState()[0]) {
+    game.updateGameState(array[i++]);
 }
 
-console.log(checkGameOverStatus());
+/* 
 
-updateGameBoard(player1.mark, [1, 1]);
-console.log(board);
-console.log(checkGameOverStatus());
+  0 1 2
+0 _ _ _
+1 _ _ _
+2 _ _ _
 
-
-updateGameBoard(player1.mark, [2, 1]);
-console.log(board);
-console.log(checkGameOverStatus());
+ */

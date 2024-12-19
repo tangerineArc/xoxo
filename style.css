@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanalei&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
 *,
 *::before,
 *::after {
@@ -6,12 +9,122 @@
     margin: 0;
 }
 
+:root {
+    --primary-background-color: #ffffff;
+    /* --secondary-background-color: #d3d3d3; */
+    /* --tertiary-background-color: #f5f3f4; */
+    
+    --primary-text-color: #000000;
+}
+
+body {
+    background-color: var(--primary-background-color);
+    height: 100vh;
+    padding: 2rem 1rem;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+
+    color: var(--primary-text-color);
+    font-family: "Roboto", serif;
+
+    user-select: none;
+}
+
+h1 {
+    font-family: "Hanalei", serif;
+    font-size: 5rem;
+}
+
+aside {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.mode-settings,
+.player-settings,
+.global-settings {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+
+    border: 2px solid black;
+    border-radius: 5px;
+    padding: 0.2rem;
+}
+
+.mode-settings > div,
+.player-settings > div,
+.global-settings > button {
+    border: 2px solid black;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    /* background-color: var(--primary-background-color); */
+
+    cursor: pointer;
+}
+
+.selected-mode {
+    background-color: var(--primary-text-color);
+    color: var(--primary-background-color);
+}
+
+.player-settings > div {
+    /* background-color: var(--primary-background-color); */
+    padding: 0 1rem;
+
+    font-family: "Hanalei", serif;
+    font-weight: bold;
+    font-size: 2rem;
+}
+
+.selected-player {
+    background-color: var(--primary-text-color);
+    
+    color: var(--primary-background-color);
+    font-weight: normal !important;
+}
+
+.global-settings > button {
+    background-color: var(--primary-background-color);
+
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.global-settings > button:hover {
+    background-color: var(--primary-text-color);
+
+    color: var(--primary-background-color);
+}
+
 .arena {
-    display: grid;
+    display: inline-grid;
     grid-template-columns: repeat(3, 150px);
     grid-template-rows: repeat(3, 150px);
+    gap: 1rem;
 }
 
 .arena div {
-    border: 1px solid black;
+    border: 2px solid var(--primary-text-color);
+    border-radius: 5px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-family: "Hanalei", serif;
+    font-size: 6rem;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.win-pos {
+    background-color: var(--primary-text-color);
+    color: var(--primary-background-color);
 }

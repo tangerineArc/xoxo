@@ -1,18 +1,21 @@
-const p1Mark = "x";
 const gameMode = "manual";
 
-const game = (function(p1Mark, gameMode) {
+const game = (function(p1Mark, p2Mark, gameMode) {
+
     function _createPlayer(mark) {
         return {mark};
     }
 
     const player1 = _createPlayer(p1Mark);
-    const player2 = _createPlayer(p1Mark === "x" ? "o" : "x");
+    const player2 = _createPlayer(p2Mark);
 
     const _board = [];
     let _currentPlayer = structuredClone(player1);
 
     function initializeBoard() {
+        _board.length = 0;
+        _currentPlayer = structuredClone(player1);
+
         for (let i = 0; i < 3; i ++) {
             _board.push(["_", "_", "_"]);
         }
@@ -24,7 +27,6 @@ const game = (function(p1Mark, gameMode) {
         }
 
         _board[position[0]][position[1]] = _currentPlayer.mark;
-        console.log(structuredClone(_board));
 
         if (_currentPlayer.mark === player1.mark) {
             _currentPlayer = structuredClone(player2);
@@ -43,75 +45,141 @@ const game = (function(p1Mark, gameMode) {
         const rows = [[], [], []];
         const columns = [[], [], []];
         const diagonals = [[], []];
+        let numBlanks = 0;
 
         for (let i = 0; i < 3; i ++) {
             for (let j = 0; j < 3; j ++) {
-                rows[i].push(_board[i][j]);
-                columns[j].push(_board[i][j]);
-                if (i === j) diagonals[0].push(_board[i][j]); // primary diagonal
-                if (i + j === 2) diagonals[1].push(_board[i][j]); // secondary diagonal
+                const position = [i, j];
+                const mark = _board[i][j];
+
+                rows[i].push([mark, position]);
+                columns[j].push([mark, position]);
+                if (i === j) {
+                    diagonals[0].push([mark, position]); // primary diagonal
+                }
+                if (i + j === 2) {
+                    diagonals[1].push([mark, position]); // secondary diagonal
+                }
+                if (mark === "_") {
+                    numBlanks ++;
+                }
             }
         }
 
-        return [rows, columns, diagonals];
+        return [[rows, columns, diagonals], numBlanks];
     }
 
     function getRunningState() {
-        const boardState = _getBoardState();
+        const [boardState, numBlanks] = _getBoardState();
 
-        for (let dimension of boardState) { // [rows, columns, diagonals]
-            for (let entry of dimension) {
+        for (let orientation of boardState) { // [rows, columns, diagonals]
+            for (let dimension of orientation) {
+                const entry = dimension.map(item => item[0]);
+                const positions = dimension.map(item => item[1]);
+
                 if (entry.includes("_")) continue;
-                if (!entry.includes(player1.mark)) return [false, player2];
-                if (!entry.includes(player2.mark)) return [false, player1];
+                if (!entry.includes(player1.mark)) return [false, player2, positions];
+                if (!entry.includes(player2.mark)) return [false, player1, positions];
             }
         }
 
-        return [true, null]; // game is not over i.e. running
+        if (numBlanks === 0) {
+            // [isRunning, winner, winPositions]
+            return [false, null, null]; // game draw
+        }
+
+        return [true, null, null]; // game is not over i.e. running
     }
 
     return {initializeBoard, updateGameState, getCurrentPlayer, getRunningState};
-})(p1Mark, gameMode);
+
+})("x", "o", gameMode);
+
 
 game.initializeBoard();
 
+
 const display = (function() {
-    const arena = document.querySelector(".arena");
+
     const cells = document.querySelectorAll(".arena > div");
+    const resetButton = document.querySelector(".global-settings > button");
+    const [xTag, oTag] = document.querySelectorAll(".player-settings > div");
 
     cells.forEach(cell => {
         cell.addEventListener("click", registerMove);
     });
 
-    function registerMove(event) {
-        if (!game.getRunningState()[0]) {
-            return;
-        }
+    resetButton.addEventListener("click", resetDisplay);
 
+    function resetDisplay(event) {
+        game.initializeBoard();
+        cells.forEach(cell => {
+            cell.textContent = "";
+            cell.className = ""; // remove styling
+            cell.style.fontWeight = "bold";
+            cell.addEventListener("click", registerMove);
+        });
+        
+        changeTag();
+    }
+
+    function registerMove(event) {
         const position = event.currentTarget.dataset.position
             .split("")
             .map(pos => Number(pos));
 
         const currentPlayer = game.getCurrentPlayer();
-        
-        if(game.updateGameState(position)) {
+
+        if (game.updateGameState(position)) {
             updateDisplay(position, currentPlayer.mark);
         }
+
+        const [isGameRunning, winner, winPositions] = game.getRunningState();
+
+        if (!isGameRunning) {
+            cells.forEach(cell => {
+                cell.removeEventListener("click", registerMove);
+            });
+
+            if (winner) {
+                showGameOverState(winPositions.map(pos => pos.join("")));
+                return;
+            } else {
+                console.log("draw");
+            }
+        }
+
+        changeTag();
     }
 
     function updateDisplay(position, mark) {
         position = position.join("");
-        const cell = Array.from(cells)
+        const cell = Array
+            .from(cells)
             .filter(cell => cell.dataset.position === position)[0];
         cell.textContent = mark;
     }
+
+    function showGameOverState(positions) {
+        const winCells = Array
+            .from(cells)
+            .filter(cell => positions.includes(cell.dataset.position));
+        
+        winCells.forEach(cell => {
+            cell.className = "win-pos";
+            cell.style.fontWeight = "normal";
+        });
+    }
+
+    function changeTag() {
+        const currentPlayer = game.getCurrentPlayer();
+        if (currentPlayer.mark === "x") {
+            xTag.className = "selected-player";
+            oTag.className = "";
+        } else {
+            xTag.className = "";
+            oTag.className = "selected-player";
+        }
+    }
+
 })();
-
-/* 
-
-  0 1 2
-0 _ _ _
-1 _ _ _
-2 _ _ _
-
- */

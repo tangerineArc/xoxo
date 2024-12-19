@@ -19,14 +19,24 @@ const game = (function(p1Mark, gameMode) {
     }
 
     function updateGameState(position) {
+        if (_board[position[0]][position[1]] !== "_") {
+            return false;
+        }
+
         _board[position[0]][position[1]] = _currentPlayer.mark;
-        // console.log(structuredClone(_board));
+        console.log(structuredClone(_board));
 
         if (_currentPlayer.mark === player1.mark) {
             _currentPlayer = structuredClone(player2);
         } else {
             _currentPlayer = structuredClone(player1);
         }
+
+        return true;
+    }
+
+    function getCurrentPlayer() {
+        return structuredClone(_currentPlayer);
     }
 
     function _getBoardState() {
@@ -60,16 +70,42 @@ const game = (function(p1Mark, gameMode) {
         return [true, null]; // game is not over i.e. running
     }
 
-    return {initializeBoard, updateGameState, getRunningState};
-}) (p1Mark, gameMode);
-
+    return {initializeBoard, updateGameState, getCurrentPlayer, getRunningState};
+})(p1Mark, gameMode);
 
 game.initializeBoard();
-const array = [[0, 0], [1, 1], [0, 1], [0, 2], [2, 2], [2, 0]];
-let i = 0;
-while (game.getRunningState()[0]) {
-    game.updateGameState(array[i++]);
-}
+
+const display = (function() {
+    const arena = document.querySelector(".arena");
+    const cells = document.querySelectorAll(".arena > div");
+
+    cells.forEach(cell => {
+        cell.addEventListener("click", registerMove);
+    });
+
+    function registerMove(event) {
+        if (!game.getRunningState()[0]) {
+            return;
+        }
+
+        const position = event.currentTarget.dataset.position
+            .split("")
+            .map(pos => Number(pos));
+
+        const currentPlayer = game.getCurrentPlayer();
+        
+        if(game.updateGameState(position)) {
+            updateDisplay(position, currentPlayer.mark);
+        }
+    }
+
+    function updateDisplay(position, mark) {
+        position = position.join("");
+        const cell = Array.from(cells)
+            .filter(cell => cell.dataset.position === position)[0];
+        cell.textContent = mark;
+    }
+})();
 
 /* 
 

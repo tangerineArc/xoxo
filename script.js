@@ -1,7 +1,7 @@
 // const gameMode = "manual";
 const gameMode = "bot";
 
-const game = (function(p1Mark, p2Mark, gameMode) {
+const game = (function(p1Mark, p2Mark) {
 
     function _createPlayer(mark) {
         return {mark};
@@ -22,12 +22,12 @@ const game = (function(p1Mark, p2Mark, gameMode) {
         }
     }
 
-    function updateGameState(position) {
-        if (_board[position[0]][position[1]] !== "_") {
+    function updateGameState(position, board = _board) {
+        if (board[position[0]][position[1]] !== "_") {
             return false;
         }
 
-        _board[position[0]][position[1]] = _currentPlayer.mark;
+        board[position[0]][position[1]] = _currentPlayer.mark;
 
         if (_currentPlayer.mark === player1.mark) {
             _currentPlayer = structuredClone(player2);
@@ -46,16 +46,17 @@ const game = (function(p1Mark, p2Mark, gameMode) {
         return structuredClone(_board);
     }
 
-    function _getBoardState() {
+    function _getBoardState(board = _board) {
         const rows = [[], [], []];
         const columns = [[], [], []];
         const diagonals = [[], []];
+
         let numBlanks = 0;
 
         for (let i = 0; i < 3; i ++) {
             for (let j = 0; j < 3; j ++) {
                 const position = [i, j];
-                const mark = _board[i][j];
+                const mark = board[i][j];
 
                 rows[i].push([mark, position]);
                 columns[j].push([mark, position]);
@@ -74,8 +75,8 @@ const game = (function(p1Mark, p2Mark, gameMode) {
         return [[rows, columns, diagonals], numBlanks];
     }
 
-    function getRunningState() {
-        const [boardState, numBlanks] = _getBoardState();
+    function getRunningState(board = _board) {
+        const [boardState, numBlanks] = _getBoardState(board);
 
         for (let orientation of boardState) { // [rows, columns, diagonals]
             for (let dimension of orientation) {
@@ -83,8 +84,8 @@ const game = (function(p1Mark, p2Mark, gameMode) {
                 const positions = dimension.map(item => item[1]);
 
                 if (entry.includes("_")) continue;
-                if (!entry.includes(player1.mark)) return [false, player2, positions];
-                if (!entry.includes(player2.mark)) return [false, player1, positions];
+                if (!entry.includes(player1.mark)) return [false, structuredClone(player2), positions];
+                if (!entry.includes(player2.mark)) return [false, structuredClone(player1), positions];
             }
         }
 
@@ -98,31 +99,48 @@ const game = (function(p1Mark, p2Mark, gameMode) {
 
     return {initializeBoard, updateGameState, getCurrentPlayer, getBoard, getRunningState};
 
-})("x", "o", gameMode);
+})("x", "o");
 
 
 const bots = (function(game, humanMark, botMark) {
 
-    // two bots: random-bot, intelligent-bot
-    /* 
-        dependencies: 
-            currentBoardState: array (2d)
-            humanMark: string ("x")
-            botMark: string("o")
-            checkWinStatus: func
+    function tangerine(board) {        
+        const emptyCells = _getEmptyCells(board);
+        const cellScoreMap = {"0": [], "1": [], "-1": []};
 
-     */
+        for (let cell of emptyCells) {
+            board[cell[0]][cell[1]] = botMark;
+            const score = _minimax(board, humanMark);
+            board[cell[0]][cell[1]] = botMark;
 
-    function tangerineBot() {
+            if (score === 0) {
+                cellScoreMap["0"].push(cell);
+            } else if (score === 1) {
+                cellScoreMap["1"].push(cell);
+            } else if (score === -1) {
+                cellScoreMap["-1"].push(cell);
+            }
+        }
 
+        console.log(cellScoreMap);
+
+        const zeroLength = cellScoreMap["0"].length;
+        const winLength = cellScoreMap["1"].length;
+        const loseLength = cellScoreMap["-1"].length;
+        
+        if (winLength !== 0) {
+            return cellScoreMap["1"][Math.floor(Math.random() * winLength)];
+        }
+        if (zeroLength !== 0) {
+            return cellScoreMap["0"][Math.floor(Math.random() * zeroLength)];
+        }
+        return cellScoreMap["-1"][Math.floor(Math.random() * loseLength)];
     }
 
     function lemon() {
-        const board = game.getBoard();
-        const emptyCells = _getEmptyCells(board);
-
+        const emptyCells = _getEmptyCells(game.getBoard());
         const idx = Math.floor(Math.random() * emptyCells.length);
-        // console.log(emptyCells[idx]);
+        
         if (emptyCells.length !== 0) return emptyCells[idx];
         return null;
     }
@@ -140,7 +158,40 @@ const bots = (function(game, humanMark, botMark) {
         return structuredClone(emptyCells);
     }
 
-    return {lemon};
+    function _minimax(board, currentPlayerMark) {
+        const [isRunning, winner, ] = game.getRunningState(board);
+        if (winner && winner.mark === humanMark) {
+            return -1;
+        } else if (winner && winner.mark === botMark) {
+            return 1;
+        } else if (!isRunning) {
+            return 0;
+        }
+
+        const emptyCells = _getEmptyCells(board);
+
+        if (currentPlayerMark === botMark) {
+            let bestScore = -Infinity;
+            for (let cell of emptyCells) {
+                board[cell[0]][cell[1]] = currentPlayerMark;
+                let score = _minimax(board, humanMark);
+                board[cell[0]][cell[1]] = "_";
+                bestScore = Math.max(score, bestScore);
+            }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let cell of emptyCells) {
+                board[cell[0]][cell[1]] = currentPlayerMark;
+                let score = _minimax(board, botMark);
+                board[cell[0]][cell[1]] = "_";
+                bestScore = Math.min(score, bestScore);
+            }
+            return bestScore;
+        }
+    }
+
+    return {lemon, tangerine};
 
 })(game, "x", "o");
 
@@ -150,6 +201,7 @@ const display = (function(game, bots, gameMode) {
     const cells = document.querySelectorAll(".arena > div");
     const resetButton = document.querySelector(".global-settings > button");
     const [xTag, oTag] = document.querySelectorAll(".player-settings > div");
+    const modeSelectors = document.querySelectorAll(".mode-settings > div");
 
     game.initializeBoard();
 
@@ -158,6 +210,15 @@ const display = (function(game, bots, gameMode) {
     });
 
     resetButton.addEventListener("click", resetDisplay);
+
+    modeSelectors.forEach(selector => {
+        selector.addEventListener("click", setGameMode);
+    });
+
+    // function setGameMode(event) {
+    //     resetDisplay();
+    //     if (event.currentTarget)
+    // }
 
     function resetDisplay(event) {
         game.initializeBoard();
@@ -180,7 +241,8 @@ const display = (function(game, bots, gameMode) {
                 .split("")
                 .map(pos => Number(pos));
         } else {
-            position = bots.lemon();
+            // position = bots.lemon();
+            position = bots.tangerine(game.getBoard());
         }
 
         if (position === null) return;

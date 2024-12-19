@@ -1,6 +1,3 @@
-// const gameMode = "manual";
-const gameMode = "bot";
-
 const game = (function(p1Mark, p2Mark) {
 
     function _createPlayer(mark) {
@@ -102,9 +99,9 @@ const game = (function(p1Mark, p2Mark) {
 })("x", "o");
 
 
-const bots = (function(game, humanMark, botMark) {
+const bots = (function(game) {
 
-    function tangerine(board) {        
+    function tangerine(board, humanMark, botMark) {
         const emptyCells = _getEmptyCells(board);
         const cellScoreMap = {"0": [], "1": [], "-1": []};
 
@@ -122,8 +119,6 @@ const bots = (function(game, humanMark, botMark) {
             }
         }
 
-        console.log(cellScoreMap);
-
         const zeroLength = cellScoreMap["0"].length;
         const winLength = cellScoreMap["1"].length;
         const loseLength = cellScoreMap["-1"].length;
@@ -137,8 +132,8 @@ const bots = (function(game, humanMark, botMark) {
         return cellScoreMap["-1"][Math.floor(Math.random() * loseLength)];
     }
 
-    function lemon() {
-        const emptyCells = _getEmptyCells(game.getBoard());
+    function lemon(board) {
+        const emptyCells = _getEmptyCells(board);
         const idx = Math.floor(Math.random() * emptyCells.length);
         
         if (emptyCells.length !== 0) return emptyCells[idx];
@@ -158,7 +153,7 @@ const bots = (function(game, humanMark, botMark) {
         return structuredClone(emptyCells);
     }
 
-    function _minimax(board, currentPlayerMark) {
+    function _minimax(board, currentPlayerMark, humanMark, botMark) {
         const [isRunning, winner, ] = game.getRunningState(board);
         if (winner && winner.mark === humanMark) {
             return -1;
@@ -174,7 +169,7 @@ const bots = (function(game, humanMark, botMark) {
             let bestScore = -Infinity;
             for (let cell of emptyCells) {
                 board[cell[0]][cell[1]] = currentPlayerMark;
-                let score = _minimax(board, humanMark);
+                let score = _minimax(board, humanMark, humanMark, botMark);
                 board[cell[0]][cell[1]] = "_";
                 bestScore = Math.max(score, bestScore);
             }
@@ -183,7 +178,7 @@ const bots = (function(game, humanMark, botMark) {
             let bestScore = Infinity;
             for (let cell of emptyCells) {
                 board[cell[0]][cell[1]] = currentPlayerMark;
-                let score = _minimax(board, botMark);
+                let score = _minimax(board, botMark, humanMark, botMark);
                 board[cell[0]][cell[1]] = "_";
                 bestScore = Math.min(score, bestScore);
             }
@@ -193,10 +188,10 @@ const bots = (function(game, humanMark, botMark) {
 
     return {lemon, tangerine};
 
-})(game, "x", "o");
+})(game);
 
 
-const display = (function(game, bots, gameMode) {
+(function(game, bots, gameMode) {
 
     const cells = document.querySelectorAll(".arena > div");
     const resetButton = document.querySelector(".global-settings > button");
@@ -215,10 +210,14 @@ const display = (function(game, bots, gameMode) {
         selector.addEventListener("click", setGameMode);
     });
 
-    // function setGameMode(event) {
-    //     resetDisplay();
-    //     if (event.currentTarget)
-    // }
+    function setGameMode(event) {
+        resetDisplay();
+        gameMode = event.currentTarget.dataset.mode;
+        modeSelectors.forEach(selector => {
+            selector.className = "";
+        });
+        event.currentTarget.className = "selected-mode";
+    }
 
     function resetDisplay(event) {
         game.initializeBoard();
@@ -241,8 +240,9 @@ const display = (function(game, bots, gameMode) {
                 .split("")
                 .map(pos => Number(pos));
         } else {
-            // position = bots.lemon();
-            position = bots.tangerine(game.getBoard());
+            position = Math.random() < 0.2 ? 
+                bots.lemon(game.getBoard()) :
+                bots.tangerine(game.getBoard(), "x", "o");
         }
 
         if (position === null) return;
@@ -303,4 +303,4 @@ const display = (function(game, bots, gameMode) {
         }
     }
 
-})(game, bots, gameMode);
+})(game, bots, "manual");

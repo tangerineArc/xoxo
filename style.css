@@ -60,7 +60,6 @@ aside {
     border: 2px solid black;
     border-radius: 5px;
     padding: 0.5rem 1rem;
-    /* background-color: var(--primary-background-color); */
 
     cursor: pointer;
 }
@@ -70,8 +69,11 @@ aside {
     color: var(--primary-background-color);
 }
 
+.mode-settings > div:not(.selected-mode):hover {
+    background-color: lightgrey;
+}
+
 .player-settings > div {
-    /* background-color: var(--primary-background-color); */
     padding: 0 1rem;
 
     font-family: "Hanalei", serif;
@@ -97,6 +99,20 @@ aside {
     background-color: var(--primary-text-color);
 
     color: var(--primary-background-color);
+}
+
+.game-tip {
+    visibility: hidden;
+
+    font-size: 1.2rem;
+    text-align: center;
+    color: grey;
+}
+
+.game-tip > span {
+    /* font-family: "Hanalei", serif; */
+    font-weight: bold;
+    /* font-size: 1.6rem; */
 }
 
 .arena {

@@ -192,11 +192,22 @@ const bots = (function(game) {
 
 
 (function(game, bots, gameMode) {
+    
+    const BOT_DISTRO = 0.5;
+    const BOT_MODE_INSTRUCTION = `choose either <span>X</span> or <span>O</span> to start playing <br> <span>X</span> plays first`;
+    const HUMAN_WIN_MESSAGE = "You have beaten the bot! <br> click <span>reset</span> to start over";
+    const BOT_WIN_MESSAGE = "The AI overlord has taken over! <br> click <span>reset</span> to start over";
+    const DRAW_MESSAGE = "It's a tie! <br> click <span>reset</span> to start over";
 
     const cells = document.querySelectorAll(".arena > div");
     const resetButton = document.querySelector(".global-settings > button");
     const [xTag, oTag] = document.querySelectorAll(".player-settings > div");
     const modeSelectors = document.querySelectorAll(".mode-settings > div");
+    const markSelectors = [xTag, oTag];
+    const gameTip = document.querySelector(".game-tip");
+
+    let botMark = null;
+    let humanMark = null;
 
     game.initializeBoard();
 
@@ -204,19 +215,67 @@ const bots = (function(game) {
         cell.addEventListener("click", registerMove);
     });
 
-    resetButton.addEventListener("click", resetDisplay);
+    resetButton.addEventListener("click", event => {
+        resetDisplay(event);
+
+        if (gameMode === "bot") {
+            gameTip.innerHTML = BOT_MODE_INSTRUCTION;
+            gameTip.style.visibility = "visible";
+        }
+    });
 
     modeSelectors.forEach(selector => {
         selector.addEventListener("click", setGameMode);
     });
 
+    markSelectors.forEach(selector => {
+        selector.addEventListener("click", setHumanMark);
+    });
+
+    function setHumanMark(event) {
+        if (gameMode === "manual") return;
+        if (event.currentTarget.className === "selected-player") return;
+
+        resetDisplay();
+        humanMark = event.currentTarget.textContent;
+        botMark = humanMark === "x" ? "o" : "x";
+
+        markSelectors.forEach(selector => {
+            selector.className = "";
+        });
+        event.currentTarget.className = "selected-player";
+
+        if (botMark === "x") {
+            cells[0].click();
+        }
+
+        gameTip.innerHTML = "";
+        gameTip.style.visibility = "hidden";  
+    }
+
     function setGameMode(event) {
+        if (event.currentTarget.className === "selected-mode") return;
+
         resetDisplay();
         gameMode = event.currentTarget.dataset.mode;
+
         modeSelectors.forEach(selector => {
             selector.className = "";
         });
+
         event.currentTarget.className = "selected-mode";
+
+        markSelectors.forEach(selector => {
+            selector.className = "";
+        });
+
+        if (gameMode === "bot") {
+            gameTip.innerHTML = BOT_MODE_INSTRUCTION;
+            gameTip.style.visibility = "visible";
+        } else {
+            gameTip.innerHTML = "";
+            gameTip.style.visibility = "hidden";   
+        }
     }
 
     function resetDisplay(event) {
@@ -228,21 +287,35 @@ const bots = (function(game) {
             cell.addEventListener("click", registerMove);
         });
         
-        changeTag();
+        if (gameMode === "manual") {
+            changeTag();
+        } else {
+            markSelectors.forEach(selector => {
+                selector.className = "";
+            });
+
+            botMark = null;
+            humanMark = null;
+        }
+
+        gameTip.innerHTML = "";
+        gameTip.style.visibility = "hidden";
     }
 
     function registerMove(event) {
+        if (gameMode === "bot" && (!humanMark || !botMark)) return;
+
         const currentPlayer = game.getCurrentPlayer();
 
         let position;
-        if (gameMode === "manual" || currentPlayer.mark === "x") {
+        if (gameMode === "manual" || currentPlayer.mark === humanMark) {
             position = event.currentTarget.dataset.position
                 .split("")
                 .map(pos => Number(pos));
         } else {
-            position = Math.random() < 0.2 ? 
+            position = Math.random() < BOT_DISTRO ? 
                 bots.lemon(game.getBoard()) :
-                bots.tangerine(game.getBoard(), "x", "o");
+                bots.tangerine(game.getBoard(), humanMark, botMark);
         }
 
         if (position === null) return;
@@ -259,14 +332,18 @@ const bots = (function(game) {
             });
 
             if (winner) {
-                showGameOverState(winPositions.map(pos => pos.join("")));
+                showGameOverState(winPositions.map(pos => pos.join("")), winner);
                 return;
             } else {
-                console.log("draw");
+                // console.log("draw");
+                gameTip.innerHTML = DRAW_MESSAGE;
+                gameTip.style.visibility = "visible";
             }
         }
 
-        changeTag();
+        if (gameMode === "manual") {
+            changeTag();
+        }
 
         if (gameMode === "bot") {
             event.currentTarget.click();
@@ -281,7 +358,7 @@ const bots = (function(game) {
         cell.textContent = mark;
     }
 
-    function showGameOverState(positions) {
+    function showGameOverState(positions, winner) {
         const winCells = Array
             .from(cells)
             .filter(cell => positions.includes(cell.dataset.position));
@@ -290,6 +367,18 @@ const bots = (function(game) {
             cell.className = "win-pos";
             cell.style.fontWeight = "normal";
         });
+
+        if (gameMode === "bot" && winner.mark === humanMark) {
+            gameTip.innerHTML = HUMAN_WIN_MESSAGE;
+        } else if (gameMode === "bot") {
+            gameTip.innerHTML = BOT_WIN_MESSAGE;
+        }
+
+        if (gameMode === "manual") {
+            gameTip.innerHTML = `Player <span>${winner.mark.toUpperCase()}</span> wins! <br> click <span>reset</span> to start over`;
+        }
+
+        gameTip.style.visibility = "visible";
     }
 
     function changeTag() {

@@ -1,3 +1,5 @@
+"use strict";
+
 const game = (function(p1Mark, p2Mark) {
 
     function _createPlayer(mark) {
@@ -122,7 +124,7 @@ const bots = (function(game) {
         const zeroLength = cellScoreMap["0"].length;
         const winLength = cellScoreMap["1"].length;
         const loseLength = cellScoreMap["-1"].length;
-        
+
         if (winLength !== 0) {
             return cellScoreMap["1"][Math.floor(Math.random() * winLength)];
         }
@@ -135,7 +137,7 @@ const bots = (function(game) {
     function lemon(board) {
         const emptyCells = _getEmptyCells(board);
         const idx = Math.floor(Math.random() * emptyCells.length);
-        
+
         if (emptyCells.length !== 0) return emptyCells[idx];
         return null;
     }
@@ -192,7 +194,7 @@ const bots = (function(game) {
 
 
 (function(game, bots, gameMode) {
-    
+
     const BOT_DISTRO = 0.5;
     const BOT_MODE_INSTRUCTION = `choose either <span>X</span> or <span>O</span> to start playing <br> <span>X</span> plays first`;
     const HUMAN_WIN_MESSAGE = "You have beaten the bot! <br> click <span>reset</span> to start over";
@@ -250,7 +252,7 @@ const bots = (function(game) {
         }
 
         gameTip.innerHTML = "";
-        gameTip.style.visibility = "hidden";  
+        gameTip.style.visibility = "hidden";
     }
 
     function setGameMode(event) {
@@ -274,7 +276,8 @@ const bots = (function(game) {
             gameTip.style.visibility = "visible";
         } else {
             gameTip.innerHTML = "";
-            gameTip.style.visibility = "hidden";   
+            gameTip.style.visibility = "hidden";
+            changeTag();
         }
     }
 
@@ -286,7 +289,7 @@ const bots = (function(game) {
             cell.style.fontWeight = "bold";
             cell.addEventListener("click", registerMove);
         });
-        
+
         if (gameMode === "manual") {
             changeTag();
         } else {
@@ -313,13 +316,13 @@ const bots = (function(game) {
                 .split("")
                 .map(pos => Number(pos));
         } else {
-            position = Math.random() < BOT_DISTRO ? 
+            position = Math.random() < BOT_DISTRO ?
                 bots.lemon(game.getBoard()) :
                 bots.tangerine(game.getBoard(), humanMark, botMark);
         }
 
         if (position === null) return;
-        
+
         if (game.updateGameState(position)) {
             updateDisplay(position, currentPlayer.mark);
         }
@@ -362,7 +365,7 @@ const bots = (function(game) {
         const winCells = Array
             .from(cells)
             .filter(cell => positions.includes(cell.dataset.position));
-        
+
         winCells.forEach(cell => {
             cell.className = "win-pos";
             cell.style.fontWeight = "normal";

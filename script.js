@@ -195,7 +195,7 @@ const bots = (function(game) {
 
 (function(game, bots, gameMode) {
 
-    const BOT_DISTRO = 0;
+    const BOT_DISTRO = 0.4;
     const BOT_MODE_INSTRUCTION = `choose either <span>X</span> or <span>O</span> to start playing <br> <span>X</span> plays first`;
     const HUMAN_WIN_MESSAGE = "You have beaten the bot! <br> click <span>reset</span> to start over";
     const BOT_WIN_MESSAGE = "The AI overlord has taken over! <br> click <span>reset</span> to start over";
